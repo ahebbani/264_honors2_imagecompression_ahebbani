@@ -12,6 +12,7 @@ Node* createNode(char data, int frequency) {
     return newNode;
 }
 
+
 // Helper function to compare frequencies for sorting nodes
 int compareNodes(const void* a, const void* b) {
     return ((Node*)a)->frequency - ((Node*)b)->frequency;
@@ -19,13 +20,11 @@ int compareNodes(const void* a, const void* b) {
 
 // Function to build the Huffman tree
 Node* buildHuffmanTree(char data[], int frequency[], int size) {
-    // Create an array of nodes
-    Node* nodes[size];
+    Node** nodes = (Node**)malloc(sizeof(Node*) * size);
     for (int i = 0; i < size; ++i) {
         nodes[i] = createNode(data[i], frequency[i]);
     }
 
-    // Build the Huffman tree using a priority queue (min heap)
     while (size > 1) {
         qsort(nodes, size, sizeof(Node*), compareNodes);
 
@@ -36,14 +35,15 @@ Node* buildHuffmanTree(char data[], int frequency[], int size) {
         internalNode->left = left;
         internalNode->right = right;
 
-        // Remove the two nodes with the lowest frequency
         nodes[0] = internalNode;
         nodes[1] = nodes[size - 1];
         size--;
     }
 
-    // The root of the Huffman tree is the only remaining node in the array
-    return nodes[0];
+    Node* root = nodes[0];
+    free(nodes);
+
+    return root;
 }
 
 // Helper function to perform DFS and generate Huffman codes
@@ -58,20 +58,16 @@ void generateHuffmanCodesHelper(Node* root, int arr[], int top, char codeTable[]
         generateHuffmanCodesHelper(root->right, arr, top + 1, codeTable);
     }
 
-    // If it's a leaf node, store the Huffman code in the codeTable
     if (!root->left && !root->right) {
-        codeTable[root->data][top] = '\0';
+        codeTable[(unsigned char)root->data][top] = '\0';
     }
 }
 
 // Function to perform Huffman coding and generate codes for each character
 void generateHuffmanCodes(Node* root, int arr[], int top) {
-    // Create a table to store Huffman codes for each character
-    char codeTable[256][100]; // Assuming ASCII characters
-
+    char codeTable[256][100];
     generateHuffmanCodesHelper(root, arr, top, codeTable);
 
-    // For demonstration purposes, let's print the codes
     printf("Huffman Codes:\n");
     for (int i = 0; i < 256; ++i) {
         if (codeTable[i][0] != '\0') {
@@ -79,6 +75,7 @@ void generateHuffmanCodes(Node* root, int arr[], int top) {
         }
     }
 }
+
 
 // Function to compress a text file using Huffman coding
 void compressFile(char fileName[]) {
