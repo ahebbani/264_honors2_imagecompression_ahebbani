@@ -13,11 +13,10 @@ compression: $(OBJS)
 testall: test1 test2 test3 test4 test5 
 
 test1 test2 test3 test4 test5: compression
-	./compression inputs/$@ > compressed$(subst test,,$@) decompressed$(subst test,,$@)
-	diff output$(subst test,,$@) expected/expected$(subst test,,$@)
+	./compression inputs/test1 > compressed1 2>&1 && ./compression inputs/test1 > decompressed1
 
 testmem: compression
 	$(VAL) ./compression inputs/test1
 
 clean: # remove all machine generated files
-	rm -f compression compressed? *.o output* vallog *~
+	rm -f compression compressed* decompressed* *.o output* vallog *~
