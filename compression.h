@@ -35,7 +35,7 @@ struct Node* extractMinFromMin_Heap(struct Min_Heap* Min_Heap);
 int isLeaf(struct Node* root);
 int convertBinaryToDecimal(int binary[], int len);
 struct Min_Heap* createAndBuildMin_Heap(char arr[], int freq[], int unique_size);
-Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap);
+struct Node *buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap);
 void printCodesIntoFile(int fd2, struct Node* root, int t[], int top);
 void compressFile(int fd1, int fd2, unsigned char a);
 void ExtractCodesFromFile(int fd1, Tree *t);

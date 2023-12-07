@@ -103,7 +103,7 @@ struct Min_Heap* createAndBuildMin_Heap(char arr[], int freq[], int unique_size)
 }
 
 // Function to build Huffman Tree
-Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap)
+struct Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap)
 {
 	Node *l, *r, *top;
 	while (!isSizeOne(Min_Heap))  {
@@ -265,7 +265,7 @@ void decompressFile(int fd1, int fd2, int f, Tree *tree)
 	unsigned char p;
 	read(fd1, &p, sizeof(char));
 	convertDecimalToBinary(inp, p, 8);
-	Tree *tree_temp = *tree;
+	Tree *tree_temp = tree;
 	for (i = 0; i < 8 && k < f; i++) {
 		if (!isroot(tree_temp)) {
 			if (i != 7) {
