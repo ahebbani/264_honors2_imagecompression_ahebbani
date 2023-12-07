@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     int freq[MAX];  // Assuming MAX is defined in your compression.h
     // Initialize freq with the frequency of each character in inputArray
     struct Min_Heap* minHeap = createAndBuildMin_Heap(inputArray, freq, MAX);
-    struct Node* huffmanTree = buildHuffmanTree(inputArray, freq, MAX, minHeap);
+    Node* huffmanTree = buildHuffmanTree(inputArray, freq, MAX, minHeap);
 
     // Compress the file
     int fdCompressed = open(compressedFileName, O_WRONLY | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR);

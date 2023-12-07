@@ -10,8 +10,8 @@ code* front = NULL;
 code* rear = NULL;
 Tree* tree_temp = NULL;
 
-struct Node* newNode(char character, int freq) {
-    struct Node* temp = (struct Node*)malloc(sizeof(struct Node));
+Node* newNode(char character, int freq) {
+    Node* temp = (Node*)malloc(sizeof(Node));
     temp->character = character;
     temp->freq = freq;
     temp->l = temp->r = NULL;
@@ -30,7 +30,7 @@ void Heapify(struct Min_Heap* Min_Heap, int i) {
         smallest = r;
 
     if (smallest != i) {
-        struct Node* swap = Min_Heap->array[i];
+        Node* swap = Min_Heap->array[i];
         Min_Heap->array[i] = Min_Heap->array[smallest];
         Min_Heap->array[smallest] = swap;
 
@@ -43,7 +43,7 @@ int isSizeOne(struct Min_Heap* Min_Heap) {
 }
 
 // Function to insert into Min_Heap
-void insertIntoMin_Heap(struct Min_Heap* Min_Heap, struct Node* node) {
+void insertIntoMin_Heap(struct Min_Heap* Min_Heap, Node* node) {
     ++Min_Heap->size;
     int i = Min_Heap->size - 1;
 
@@ -56,8 +56,8 @@ void insertIntoMin_Heap(struct Min_Heap* Min_Heap, struct Node* node) {
 }
 
 // Function to extract the minimum from Min_Heap
-struct Node* extractMinFromMin_Heap(struct Min_Heap* Min_Heap) {
-    struct Node* temp = Min_Heap->array[0];
+Node* extractMinFromMin_Heap(struct Min_Heap* Min_Heap) {
+    Node* temp = Min_Heap->array[0];
     Min_Heap->array[0] = Min_Heap->array[Min_Heap->size - 1];
     --Min_Heap->size;
     Heapify(Min_Heap, 0);
@@ -65,7 +65,7 @@ struct Node* extractMinFromMin_Heap(struct Min_Heap* Min_Heap) {
 }
 
 // Function to check if a Node is a leaf
-int isLeaf(struct Node* root) {
+int isLeaf(Node* root) {
     return !(root->l) && !(root->r);
 }
 
@@ -103,7 +103,7 @@ struct Min_Heap* createAndBuildMin_Heap(char arr[], int freq[], int unique_size)
 }
 
 // Function to build Huffman Tree
-struct Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap)
+Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap)
 {
 	Node *l, *r, *top;
 	while (!isSizeOne(Min_Heap))  {
@@ -118,7 +118,7 @@ struct Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Mi
 }
 
 // Function to print codes into file
-void printCodesIntoFile(int fd2, struct Node* root, int t[], int top)
+void printCodesIntoFile(int fd2, Node* root, int t[], int top)
 {
     int i;
     int k;
