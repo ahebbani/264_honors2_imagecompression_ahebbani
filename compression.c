@@ -1,8 +1,14 @@
-// huffman.c
-
 #include <stdlib.h>
 #include <string.h>
 #include "compression.h"
+
+void freeTree(struct MinHeapNode *root) {
+    if (root) {
+        freeTree(root->left);
+        freeTree(root->right);
+        free(root);
+    }
+}
 
 // Structure to represent a Huffman tree node
 struct MinHeapNode *newNode(char data, unsigned freq) {
@@ -12,13 +18,6 @@ struct MinHeapNode *newNode(char data, unsigned freq) {
     node->freq = freq;
     return node;
 }
-
-// Function to create a min heap
-struct MinHeap {
-    unsigned size;
-    unsigned capacity;
-    struct MinHeapNode **array;
-};
 
 struct MinHeap *createMinHeap(unsigned capacity) {
     struct MinHeap *minHeap = (struct MinHeap *)malloc(sizeof(struct MinHeap));
@@ -39,11 +38,13 @@ void minHeapify(struct MinHeap *minHeap, int idx) {
     int left = 2 * idx + 1;
     int right = 2 * idx + 2;
 
-    if (left < minHeap->size && minHeap->array[left]->freq < minHeap->array[smallest]->freq)
+    if (left < minHeap->size && minHeap->array[left]->freq < minHeap->array[smallest]->freq) {
         smallest = left;
+    }
 
-    if (right < minHeap->size && minHeap->array[right]->freq < minHeap->array[smallest]->freq)
+    if (right < minHeap->size && minHeap->array[right]->freq < minHeap->array[smallest]->freq) {
         smallest = right;
+    }
 
     if (smallest != idx) {
         swapMinHeapNode(&minHeap->array[smallest], &minHeap->array[idx]);
@@ -75,7 +76,7 @@ void insertMinHeap(struct MinHeap *minHeap, struct MinHeapNode *node) {
 
 struct MinHeap *buildMinHeap(char data[], int freq[], int size) {
     struct MinHeap *minHeap = createMinHeap(size);
-    for (int i = 0; i < size; ++i)
+    for (int i = 0; i < size; i++) // Changed ++i to i++
         minHeap->array[i] = newNode(data[i], freq[i]);
     minHeap->size = size;
     int n = minHeap->size - 1;
@@ -151,6 +152,11 @@ void compressFile(const char *inputFileName, const char *outputFileName) {
     FILE *inputFile = fopen(inputFileName, "r");
     FILE *outputFile = fopen(outputFileName, "wb");
 
+    if (!inputFile || !outputFile) {
+        fprintf(stderr, "Error opening files\n");
+        return;
+    }
+
     // Get file size
     fseek(inputFile, 0, SEEK_END);
     long fileSize = ftell(inputFile);
@@ -173,7 +179,12 @@ void compressFile(const char *inputFileName, const char *outputFileName) {
 
     // Store Huffman codes in an array
     int arr[256];
-    int codes[256][256] = {0};
+    int codes[256][256];
+    for (int i = 0; i < 256; i++) {
+        for (int j = 0; j < 256; j++) {
+            codes[i][j] = 0;
+        }
+    }
     storeCodes(root, arr, 0, codes);
 
     // Write Huffman tree to the output file
@@ -187,6 +198,11 @@ void compressFile(const char *inputFileName, const char *outputFileName) {
         writeCode(outputFile, codes[(unsigned char)c], strlen((char *)codes[(unsigned char)c]));
     }
 
+    fclose(inputFile);
+    fclose(outputFile);
+
+    // Free allocated memory
+    freeTree(root);
     fclose(inputFile);
     fclose(outputFile);
 }
@@ -231,6 +247,7 @@ void decompressFile(const char *inputFileName, const char *outputFileName) {
         if (!currentNode->left && !currentNode->right) {
             fputc(currentNode->data, outputFile);
             currentNode = root;
+            compressedSize--;
         }
     }
 

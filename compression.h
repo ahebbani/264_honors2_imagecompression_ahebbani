@@ -1,15 +1,20 @@
-// huffman.h
+#include <stdio.h>
 
 #ifndef HUFFMAN_H
 #define HUFFMAN_H
-
-#include <stdio.h>
 
 // Structure to represent a Huffman tree node
 struct MinHeapNode {
     char data;
     unsigned freq;
     struct MinHeapNode *left, *right;
+};
+
+// Function to create a min heap
+struct MinHeap {
+    unsigned size;
+    unsigned capacity;
+    struct MinHeapNode **array;
 };
 
 // Function to compress the input text file and write to the output compressed file

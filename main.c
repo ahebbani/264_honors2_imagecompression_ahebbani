@@ -1,5 +1,3 @@
-// main.c
-
 #include "compression.h"
 
 int main(int argc, char *argv[]) {
