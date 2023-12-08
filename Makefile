@@ -13,7 +13,7 @@ compression: $(OBJS)
 testall: test1 test2 test3 test4 test5 
 
 test1 test2 test3 test4 test5: compression
-	./compression inputs/test1 > compressed1 2>&1 && ./compression inputs/test1 > decompressed1
+	/.compression inputs/test1
 
 testmem: compression
 	$(VAL) ./compression inputs/test1

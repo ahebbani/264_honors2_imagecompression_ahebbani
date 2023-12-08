@@ -1,302 +1,239 @@
-#include <stdio.h>
+// huffman.c
+
 #include <stdlib.h>
 #include <string.h>
 #include "compression.h"
 
-#define MAX 16
-
-// Define global variables
-code* front = NULL;
-code* rear = NULL;
-Tree* tree_temp = NULL;
-
-Node* newNode(char character, int freq) {
-    Node* temp = (Node*)malloc(sizeof(Node));
-    temp->character = character;
-    temp->freq = freq;
-    temp->l = temp->r = NULL;
-    return temp;
+// Structure to represent a Huffman tree node
+struct MinHeapNode *newNode(char data, unsigned freq) {
+    struct MinHeapNode *node = (struct MinHeapNode *)malloc(sizeof(struct MinHeapNode));
+    node->left = node->right = NULL;
+    node->data = data;
+    node->freq = freq;
+    return node;
 }
 
-void Heapify(struct Min_Heap* Min_Heap, int i) {
-    int smallest = i;
-    int l = 2 * i + 1;
-    int r = 2 * i + 2;
+// Function to create a min heap
+struct MinHeap {
+    unsigned size;
+    unsigned capacity;
+    struct MinHeapNode **array;
+};
 
-    if (l < Min_Heap->size && Min_Heap->array[l]->freq < Min_Heap->array[smallest]->freq)
-        smallest = l;
+struct MinHeap *createMinHeap(unsigned capacity) {
+    struct MinHeap *minHeap = (struct MinHeap *)malloc(sizeof(struct MinHeap));
+    minHeap->size = 0;
+    minHeap->capacity = capacity;
+    minHeap->array = (struct MinHeapNode **)malloc(capacity * sizeof(struct MinHeapNode *));
+    return minHeap;
+}
 
-    if (r < Min_Heap->size && Min_Heap->array[r]->freq < Min_Heap->array[smallest]->freq)
-        smallest = r;
+void swapMinHeapNode(struct MinHeapNode **a, struct MinHeapNode **b) {
+    struct MinHeapNode *t = *a;
+    *a = *b;
+    *b = t;
+}
 
-    if (smallest != i) {
-        Node* swap = Min_Heap->array[i];
-        Min_Heap->array[i] = Min_Heap->array[smallest];
-        Min_Heap->array[smallest] = swap;
+void minHeapify(struct MinHeap *minHeap, int idx) {
+    int smallest = idx;
+    int left = 2 * idx + 1;
+    int right = 2 * idx + 2;
 
-        Heapify(Min_Heap, smallest);
+    if (left < minHeap->size && minHeap->array[left]->freq < minHeap->array[smallest]->freq)
+        smallest = left;
+
+    if (right < minHeap->size && minHeap->array[right]->freq < minHeap->array[smallest]->freq)
+        smallest = right;
+
+    if (smallest != idx) {
+        swapMinHeapNode(&minHeap->array[smallest], &minHeap->array[idx]);
+        minHeapify(minHeap, smallest);
     }
 }
 
-int isSizeOne(struct Min_Heap* Min_Heap) {
-    return (Min_Heap->size == 1);
+int isSizeOne(struct MinHeap *minHeap) {
+    return (minHeap->size == 1);
 }
 
-// Function to insert into Min_Heap
-void insertIntoMin_Heap(struct Min_Heap* Min_Heap, Node* node) {
-    ++Min_Heap->size;
-    int i = Min_Heap->size - 1;
+struct MinHeapNode *extractMin(struct MinHeap *minHeap) {
+    struct MinHeapNode *temp = minHeap->array[0];
+    minHeap->array[0] = minHeap->array[minHeap->size - 1];
+    --minHeap->size;
+    minHeapify(minHeap, 0);
+    return temp;
+}
 
-    while (i && node->freq < Min_Heap->array[(i - 1) / 2]->freq) {
-        Min_Heap->array[i] = Min_Heap->array[(i - 1) / 2];
+void insertMinHeap(struct MinHeap *minHeap, struct MinHeapNode *node) {
+    ++minHeap->size;
+    int i = minHeap->size - 1;
+    while (i && node->freq < minHeap->array[(i - 1) / 2]->freq) {
+        minHeap->array[i] = minHeap->array[(i - 1) / 2];
         i = (i - 1) / 2;
     }
-
-    Min_Heap->array[i] = node;
+    minHeap->array[i] = node;
 }
 
-// Function to extract the minimum from Min_Heap
-Node* extractMinFromMin_Heap(struct Min_Heap* Min_Heap) {
-    Node* temp = Min_Heap->array[0];
-    Min_Heap->array[0] = Min_Heap->array[Min_Heap->size - 1];
-    --Min_Heap->size;
-    Heapify(Min_Heap, 0);
-    return temp;
+struct MinHeap *buildMinHeap(char data[], int freq[], int size) {
+    struct MinHeap *minHeap = createMinHeap(size);
+    for (int i = 0; i < size; ++i)
+        minHeap->array[i] = newNode(data[i], freq[i]);
+    minHeap->size = size;
+    int n = minHeap->size - 1;
+    for (int i = (n - 1) / 2; i >= 0; --i)
+        minHeapify(minHeap, i);
+    return minHeap;
 }
 
-// Function to check if a Node is a leaf
-int isLeaf(Node* root) {
-    return !(root->l) && !(root->r);
-}
-
-// Function to convert binary to decimal
-int convertBinaryToDecimal(int binary[], int len) {
-    int decimal = 0;
-    for (int i = 0; i < len; ++i) {
-        decimal = decimal * 2 + binary[i];
+struct MinHeapNode *buildHuffmanTree(char data[], int freq[], int size) {
+    struct MinHeapNode *left, *right, *top;
+    struct MinHeap *minHeap = buildMinHeap(data, freq, size);
+    while (!isSizeOne(minHeap)) {
+        left = extractMin(minHeap);
+        right = extractMin(minHeap);
+        top = newNode('$', left->freq + right->freq);
+        top->left = left;
+        top->right = right;
+        insertMinHeap(minHeap, top);
     }
-    return decimal;
+    return extractMin(minHeap);
 }
 
-struct Min_Heap* createAndBuildMin_Heap(char arr[], int freq[], int unique_size)
-{
-    int i;
-
-    // Initializing heap
-    struct Min_Heap* Min_Heap = (struct Min_Heap*)malloc(sizeof(struct Min_Heap));
-    Min_Heap->size = unique_size;
-    Min_Heap->array = (Node**)malloc(Min_Heap->size * sizeof(Node*));
- 
-    // Initializing the array of pointers in minheap.
-    // Pointers pointing to new nodes of character and their frequency
-    for (i = 0; i < unique_size; ++i) {
-        // newNode is a function to initialize new node
-        Min_Heap->array[i] = newNode(arr[i], freq[i]);
+void storeCodes(struct MinHeapNode *root, int arr[], int top, int codes[][256]) {
+    if (root->left) {
+        arr[top] = 0;
+        storeCodes(root->left, arr, top + 1, codes);
     }
- 
-    int n = Min_Heap->size - 1;
-    for (i = (n - 1) / 2; i >= 0; --i) {
-        // Standard function for Heap creation
-        Heapify(Min_Heap, i);
+    if (root->right) {
+        arr[top] = 1;
+        storeCodes(root->right, arr, top + 1, codes);
     }
-    return Min_Heap;
-}
-
-// Function to build Huffman Tree
-Node* buildHuffmanTree(char arr[], int freq[], int unique_size, struct Min_Heap* Min_Heap)
-{
-	Node *l, *r, *top;
-	while (!isSizeOne(Min_Heap))  {
-		l = extractMinFromMin_Heap(Min_Heap);
-		r = extractMinFromMin_Heap(Min_Heap);
-		top = newNode('$', l->freq + r->freq);
-		top->l = l;
-		top->r = r;
-		insertIntoMin_Heap(Min_Heap, top);
-	}
-	return extractMinFromMin_Heap(Min_Heap);
-}
-
-// Function to print codes into file
-void printCodesIntoFile(int fd2, Node* root, int t[], int top)
-{
-    int i;
-    int k;
-    if (root->l) {
-        t[top] = 0;
-        printCodesIntoFile(fd2, root->l, t, top + 1);
-    }
- 
-    if (root->r) {
-        t[top] = 1;
-        printCodesIntoFile(fd2, root->r, t, top + 1);
-    }
- 
-    if (isLeaf(root)) {
-        code *data = (code*)malloc(sizeof(code));
-        Tree *tree = (Tree*)malloc(sizeof(Tree));
-        data->p = NULL;
-        data->k = root->character;
-        tree->g = root->character;
-        write(fd2, &tree->g, sizeof(char));
-        for (i = 0; i < top; i++) {
-            data->code_arr[i] = t[i];
-        }
-        tree->len = top;
-        write(fd2, &tree->len, sizeof(int));
-        tree->dec = convertBinaryToDecimal(data->code_arr, top);
-        write(fd2, &tree->dec, sizeof(int));
-        data->l = top;
-        data->p = NULL;
-        if (k == 0) {
-            front = rear = data;
-            k++;
-        }
-        else {
-            rear->p = data;
-            rear = rear->p;
+    if (!root->left && !root->right) {
+        for (int i = 0; i < top; ++i) {
+            codes[(unsigned char)root->data][i] = arr[i];
         }
     }
 }
 
-// Function to compress file
-void compressFile(int fd1, int fd2, unsigned char a)
-{
-	char n;
-	int h = 0, i;
-
-	// Codes are written into file in bit by bit format
-	while (read(fd1, &n, sizeof(char)) != 0) {
-		rear = front;
-		while (rear->k != n && rear->p != NULL) {
-			rear = rear->p;
-		}
-		if (rear->k == n) {
-			for (i = 0; i < rear->l; i++) {
-				if (h < 7) {
-					if (rear->code_arr[i] == 1) {
-						a++;
-						a = a << 1;
-						h++;
-					}
-					else if (rear->code_arr[i] == 0) {
-						a = a << 1;
-						h++;
-					}
-				}
-				else if (h == 7) {
-					if (rear->code_arr[i] == 1) {
-						a++;
-						h = 0;
-					}
-					else {
-						h = 0;
-					}
-					write(fd2, &a, sizeof(char));
-					a = 0;
-				}
-			}
-		}
-	}
-	for (i = 0; i < 7 - h; i++) {
-		a = a << 1;
-	}
-	write(fd2, &a, sizeof(char));
-}
-
-void ExtractCodesFromFile(int fd1, Tree *t)
-{
-    read(fd1, &t->g, sizeof(char));
-    read(fd1, &t->len, sizeof(int));
-    read(fd1, &t->dec, sizeof(int));
-}
-
-// Function to rebuild the Huffman tree
-void ReBuildHuffmanTree(int fd1, int size)
-{
-    int i = 0, j, k;
-    Tree *tree = (Tree*)malloc(sizeof(Tree));
-    Tree *tree_temp = tree;
-    tree->f = NULL;
-    tree->r = NULL;
-    Tree *t = (Tree*)malloc(sizeof(Tree));
-    t->f = NULL;
-    t->r = NULL;
-    for (k = 0; k < size; k++) {
-        tree_temp = tree;
-        ExtractCodesFromFile(fd1, tree);
-        int bin[MAX], bin_con[MAX];
-        for (i = 0; i < MAX; i++) {
-            bin[i] = bin_con[i] = 0;
+void writeTreeToFile(struct MinHeapNode *root, FILE *outputFile) {
+    if (root) {
+        if (!root->left && !root->right) {
+            fputc('1', outputFile);
+            fputc(root->data, outputFile);
+        } else {
+            fputc('0', outputFile);
+            writeTreeToFile(root->left, outputFile);
+            writeTreeToFile(root->right, outputFile);
         }
-        convertDecimalToBinary(bin, t->dec, t->len);
-        for (i = 0; i < t->len; i++) {
-            bin_con[i] = bin[i];
-        }
- 
-        for (j = 0; j < t->len; j++) {
-            if (bin_con[j] == 0) {
-                if (tree_temp->f == NULL) {
-                    tree_temp->f
-                        = (Tree*)malloc(sizeof(Tree));
-                }
-                tree_temp = tree_temp->f;
-            }
-            else if (bin_con[j] == 1) {
-                if (tree_temp->r == NULL) {
-                    tree_temp->r
-                        = (Tree*)malloc(sizeof(Tree));
-                }
-                tree_temp = tree_temp->r;
-            }
-        }
-        tree_temp->g = t->g;
-        tree_temp->len = t->len;
-        tree_temp->dec = t->dec;
-        tree_temp->f = NULL;
-        tree_temp->r = NULL;
-        tree_temp = tree;
     }
 }
 
-void decompressFile(int fd1, int fd2, int f, Tree *tree)
-{
-	int inp[8], i, k = 0;
-	unsigned char p;
-	read(fd1, &p, sizeof(char));
-	convertDecimalToBinary(inp, p, 8);
-	Tree *tree_temp = tree;
-	for (i = 0; i < 8 && k < f; i++) {
-		if (!isroot(tree_temp)) {
-			if (i != 7) {
-				if (inp[i] == 0) {
-					tree_temp = tree_temp->f;
-				}
-				if (inp[i] == 1) {
-					tree_temp = tree_temp->r;
-				}
-			}
-			else {
-				if (inp[i] == 0) {
-					tree_temp = tree_temp->f;
-				}
-				if (inp[i] == 1) {
-					tree_temp = tree_temp->r;
-				}
-				if (read(fd1, &p, sizeof(char)) != 0) {
-					convertDecimalToBinary(inp, p, 8);
-					i = -1;
-				}
-				else {
-					break;
-				}
-			}
-		}
-		else {
-			k++;
-			write(fd2, &tree_temp->g, sizeof(char));
-			tree_temp = tree;
-			i--;
-		}
-	}
+void writeBit(FILE *outputFile, int bit) {
+    static int currentByte = 0;
+    static unsigned char currentChar = 0;
+
+    currentChar = (currentChar << 1) | bit;
+    ++currentByte;
+
+    if (currentByte == 8) {
+        fputc(currentChar, outputFile);
+        currentByte = 0;
+        currentChar = 0;
+    }
+}
+
+void writeCode(FILE *outputFile, int code[], int size) {
+    for (int i = 0; i < size; ++i) {
+        writeBit(outputFile, code[i]);
+    }
+}
+
+void compressFile(const char *inputFileName, const char *outputFileName) {
+    FILE *inputFile = fopen(inputFileName, "r");
+    FILE *outputFile = fopen(outputFileName, "wb");
+
+    // Get file size
+    fseek(inputFile, 0, SEEK_END);
+    long fileSize = ftell(inputFile);
+    fseek(inputFile, 0, SEEK_SET);
+
+    // Print input file size
+    printf("Input File Size: %ld bytes\n", fileSize);
+
+    // Initialize frequency array
+    int freq[256] = {0};
+
+    // Count frequencies of characters in the file
+    int c;
+    while ((c = fgetc(inputFile)) != EOF) {
+        ++freq[(unsigned char)c];
+    }
+
+    // Build Huffman tree
+    struct MinHeapNode *root = buildHuffmanTree(NULL, freq, 256);
+
+    // Store Huffman codes in an array
+    int arr[256];
+    int codes[256][256] = {0};
+    storeCodes(root, arr, 0, codes);
+
+    // Write Huffman tree to the output file
+    writeTreeToFile(root, outputFile);
+
+    // Reset file pointer to the beginning
+    fseek(inputFile, 0, SEEK_SET);
+
+    // Write compressed data to the output file
+    while ((c = fgetc(inputFile)) != EOF) {
+        writeCode(outputFile, codes[(unsigned char)c], strlen((char *)codes[(unsigned char)c]));
+    }
+
+    fclose(inputFile);
+    fclose(outputFile);
+}
+
+struct MinHeapNode *buildHuffmanTreeFromFile(FILE *inputFile) {
+    int bit = fgetc(inputFile);
+    if (bit == '1') {
+        int character = fgetc(inputFile);
+        return newNode(character, 0);
+    } else {
+        struct MinHeapNode *left = buildHuffmanTreeFromFile(inputFile);
+        struct MinHeapNode *right = buildHuffmanTreeFromFile(inputFile);
+        return newNode('$', left->freq + right->freq);
+    }
+}
+
+void decompressFile(const char *inputFileName, const char *outputFileName) {
+    FILE *inputFile = fopen(inputFileName, "rb");
+    FILE *outputFile = fopen(outputFileName, "w");
+
+    // Get compressed file size
+    fseek(inputFile, 0, SEEK_END);
+    long compressedSize = ftell(inputFile);
+    fseek(inputFile, 0, SEEK_SET);
+
+    // Print compressed file size
+    printf("Compressed File Size: %ld bytes\n", compressedSize);
+
+    // Build Huffman tree from the input file
+    struct MinHeapNode *root = buildHuffmanTreeFromFile(inputFile);
+
+    // Decompress and write to the output file
+    struct MinHeapNode *currentNode = root;
+    int bit;
+    while ((bit = fgetc(inputFile)) != EOF) {
+        if (bit == '0') {
+            currentNode = currentNode->left;
+        } else {
+            currentNode = currentNode->right;
+        }
+
+        if (!currentNode->left && !currentNode->right) {
+            fputc(currentNode->data, outputFile);
+            currentNode = root;
+        }
+    }
+
+    fclose(inputFile);
+    fclose(outputFile);
 }
